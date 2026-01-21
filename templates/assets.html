@@ -53,8 +53,8 @@
             <td>{{ asset['serial_number'] or '—' }}</td>
             <td>{{ asset['department_name'] or '—' }}</td>
             <td>{{ asset['date_created'] }}</td>
-            <td>{{ 'Yes' if asset['in_use'] else 'No' }}</td>
-            <td>{{ 'Yes' if asset['approved'] else 'No' }}</td>
+            <td>{{ 'Yes' if asset['in_use']|int else 'No' }}</td>
+<td>{{ 'Yes' if asset['approved']|int else 'No' }}</td>
             {% if user['role'] == 'Admin' %}
             <td>{{ asset['owner_username'] or '—' }}</td>
             {% endif %}
@@ -83,8 +83,8 @@
                 data-type="{{ asset['type'] }}"
                 data-serial="{{ asset['serial_number'] }}"
                 data-department="{{ asset['department_id'] or '' }}"
-                data-inuse="{{ asset['in_use'] }}"
-                data-approved="{{ asset['approved'] }}"
+                data-inuse="{{ '1' if asset['in_use']|int else '0' }}"
+                data-approved="{{ '1' if asset['approved']|int else '0' }}"
                 data-userid="{{ asset['owner_id'] }}"
                 id="editBtn-{{ asset['id'] }}"
               >
@@ -244,6 +244,7 @@
       // edit modal
       document.querySelectorAll(".btn-edit").forEach((button) => {
         button.addEventListener("click", () => {
+          console.log(button.dataset);
           modalTitle.textContent = "Edit Asset";
           assetForm.action = `/asset/edit/${button.dataset.id}`;
           modalBg.classList.add("active");
@@ -260,12 +261,12 @@
             button.dataset.serial || "";
           document.getElementById("department").value =
             button.dataset.department || "";
-          document.getElementById("in_use").value = button.dataset.inuse || "1";
+          document.getElementById("in_use").value = button.dataset.inuse;
           if (isAdmin === "Admin") {
             document.getElementById("approved").value =
-              button.dataset.approved || "0";
+              button.dataset.approved;
             document.getElementById("assigned_user_id").value =
-              button.dataset.assigned || "";
+              button.dataset.userid;
           } else {
             document.getElementById("assigned_user_id").value =
               "{{ user['id'] }}";

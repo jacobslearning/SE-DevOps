@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, flash, url_for, redirect
 from werkzeug.security import generate_password_hash
-from routes.utils import login_required, current_user, get_db
+from routes.utils import login_required, current_user
+from database import db
+from models import User, Asset
 
 users_blueprint = Blueprint('users', __name__)
 
@@ -8,15 +10,13 @@ users_blueprint = Blueprint('users', __name__)
 @login_required
 def users():
     user = current_user()
-    connection = get_db()
-    cursor = connection.cursor()
-    
-    if user['role'] == 'Admin':
-        cursor.execute("SELECT id, username, password_hash, role FROM User")
+
+    if user.role == 'Admin':
+        all_users = User.query.all()
     else:
-        cursor.execute("SELECT id, username, password_hash, role FROM User WHERE id = ?", (int(user['id']),))
-    users = cursor.fetchall()
-    return render_template('users.html', users=users, user=user)
+        all_users = [user]
+
+    return render_template('users.html', users=all_users, user=user)
 
 @users_blueprint.route('/user/edit/<int:user_id>', methods=['POST'])
 @login_required
@@ -27,26 +27,29 @@ def edit_user(user_id):
     password = data['password']
     role = data['role']
 
-    if user['role'] != 'Admin' and user['id'] != user_id:
+    # Access control
+    if user.role != 'Admin' and user.id != user_id:
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
-    
-    if user['role'] != 'Admin':
+
+    if user.role != 'Admin':
         role = "User"
-    
-    if(user['role'] == 'Admin' and user['id'] == user_id and role == 'User'):
-        flash("You can not demote yourself to User", "info")
+
+    # admins cant demote themself back to user
+    if user.role == 'Admin' and user.id == user_id and role == 'User':
+        flash("You cannot demote yourself to User", "info")
         return redirect(url_for('users.users'))
 
-    connection = get_db()
-    cursor = connection.cursor()
-    # if value is [HIDDEN], user is not changing their password, if value is different, password should be hashed and updated in DB
-    if password == '[HIDDEN]':
-        cursor.execute('UPDATE User SET username = ?, role = ? WHERE id = ?', (username, role, user_id))
-    else:
-        password_hash = generate_password_hash(password)
-        cursor.execute('UPDATE User SET username = ?, password_hash = ?, role = ? WHERE id = ?', (username, password_hash, role, user_id))
-    connection.commit()
+    target_user = User.query.get_or_404(user_id)
+    target_user.username = username
+
+    # only update password if its changed
+    if password != '[HIDDEN]':
+        target_user.password_hash = generate_password_hash(password)
+
+    target_user.role = role
+    db.session.commit()
+
     flash(f"User {username} updated", "success")
     return redirect(url_for('users.users'))
 
@@ -54,31 +57,41 @@ def edit_user(user_id):
 @login_required
 def delete_user(user_id):
     user = current_user()
-    if user['role'] != 'Admin' and user['id'] != user_id:
+
+    if user.role != 'Admin' and user.id != user_id:
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
-    
-    connection = get_db()
-    cursor = connection.cursor()
-    cursor.execute('DELETE FROM Asset WHERE owner_id = ?', (int(user_id),))
-    cursor.execute('DELETE FROM User WHERE id = ?', (int(user_id),))
-    connection.commit()
-    flash(f"User deleted", "info")
-    if user['id'] == user_id: # User deleted their own account
-        return(redirect(url_for('auth.login')))
+
+    target_user = User.query.get_or_404(user_id)
+
+    # delete all assets owned by user
+    Asset.query.filter_by(owner_id=target_user.id).delete()
+
+    # then delete user
+    db.session.delete(target_user)
+    db.session.commit()
+
+    flash("User deleted", "info")
+
+    # If a user deleted themself
+    if user.id == user_id:
+        return redirect(url_for('auth.login'))
+
     return redirect(url_for('users.users'))
 
 @users_blueprint.route('/user/promote/<int:user_id>', methods=['POST'])
 @login_required
 def promote_user(user_id):
     user = current_user()
-    if user['role'] != 'Admin':
+
+    if user.role != 'Admin':
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
-    connection = get_db()
-    cursor = connection.cursor()
-    cursor.execute('UPDATE User SET role = "Admin" WHERE id = ?', (user_id,))
-    connection.commit()
+
+    target_user = User.query.get_or_404(user_id)
+    target_user.role = "Admin"
+    db.session.commit()
+
     flash(f"User promoted to Admin", "success")
     return redirect(url_for('users.users'))
 
@@ -86,25 +99,23 @@ def promote_user(user_id):
 @login_required
 def create_user():
     user = current_user()
-    if user['role'] != 'Admin':
+
+    if user.role != 'Admin':
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
-    
+
     username = request.form['username']
     password = request.form['password']
     role = request.form['role']
     password_hash = generate_password_hash(password)
 
-    connection = get_db()
-    cursor = connection.cursor()
-    cursor.execute('SELECT * FROM User WHERE username = ?', (username,))
-    users = cursor.fetchall()
-
-    if users:
+    if User.query.filter_by(username=username).first():
         flash("A user already exists with this name", "info")
         return redirect(url_for('users.users'))
-    
-    cursor.execute('INSERT INTO User (username,password_hash,role) VALUES (?,?,?)', (username, password_hash, role))
-    connection.commit()
+
+    new_user = User(username=username, password_hash=password_hash, role=role)
+    db.session.add(new_user)
+    db.session.commit()
+
     flash(f"User {username} created", "success")
     return redirect(url_for('users.users'))

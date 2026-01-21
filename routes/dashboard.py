@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, url_for, redirect
-from routes.utils import login_required, current_user, get_db
+from routes.utils import login_required, current_user
+from models import Asset, User, Department
+from database import db
 
 dashboard_blueprint = Blueprint('dashboard', __name__)
 
@@ -13,39 +15,57 @@ def index():
 @login_required
 def dashboard():
     user = current_user()
-    connection = get_db()
-    cursor = connection.cursor()
 
-    if(user['role'] == 'Admin'):
-        cursor.execute('''
-            SELECT a.*, u.username AS owner_username, d.name AS department_name
-            FROM Asset a
-            LEFT JOIN User u ON a.owner_id = u.id
-            LEFT JOIN Department d ON a.department_id = d.id
-            WHERE a.approved = 0
-        ''')
+    if user.role == 'Admin':
+        assets = (
+            Asset.query
+            .filter_by(approved=False)
+            .join(User, Asset.owner_id == User.id)
+            .join(Department, Asset.department_id == Department.id)
+            .add_columns(
+                Asset.id, Asset.name, Asset.description, Asset.type, Asset.serial_number,
+                Asset.date_created, Asset.in_use, Asset.approved,
+                User.username.label("owner_username"),
+                Department.name.label("department_name")
+            )
+            .all()
+        )
     else:
-        cursor.execute('''
-            SELECT a.*, u.username AS owner_username, d.name AS department_name
-            FROM Asset a
-            LEFT JOIN User u ON a.owner_id = u.id
-            LEFT JOIN Department d ON a.department_id = d.id
-            WHERE a.owner_id = ? AND a.approved = 0
-        ''', (user['id'],))
-    assets = [dict(row) for row in cursor.fetchall()]
+        assets = (
+            Asset.query
+            .filter_by(approved=False, owner_id=user.id)
+            .join(User, Asset.owner_id == User.id)
+            .join(Department, Asset.department_id == Department.id)
+            .add_columns(
+                Asset.id, Asset.name, Asset.description, Asset.type, Asset.serial_number,
+                Asset.date_created, Asset.in_use, Asset.approved,
+                User.username.label("owner_username"),
+                Department.name.label("department_name")
+            )
+            .all()
+        )
 
-    metrics = {}
+    assets_list = [
+        {
+            "id": asset.id,
+            "name": asset.name,
+            "description": asset.description,
+            "type": asset.type,
+            "serial_number": asset.serial_number,
+            "date_created": asset.date_created,
+            "in_use": asset.in_use,
+            "approved": asset.approved,
+            "owner_username": asset.owner_username,
+            "department_name": asset.department_name
+        }
+        for asset in assets
+    ]
 
-    cursor.execute('SELECT COUNT(*) FROM Asset')
-    metrics['total_assets'] = cursor.fetchone()[0]
+    metrics = {
+        "total_assets": Asset.query.count(),
+        "pending_assets": Asset.query.filter_by(approved=False).count(),
+        "total_users": User.query.count(),
+        "total_departments": Department.query.count()
+    }
 
-    cursor.execute('SELECT COUNT(*) FROM Asset WHERE approved = 0')
-    metrics['pending_assets'] = cursor.fetchone()[0]
-
-    cursor.execute('SELECT COUNT(*) FROM User')
-    metrics['total_users'] = cursor.fetchone()[0]
-
-    cursor.execute('SELECT COUNT(*) FROM Department')
-    metrics['total_departments'] = cursor.fetchone()[0]
-
-    return render_template('dashboard.html', user=user, assets=assets, metrics=metrics)
+    return render_template('dashboard.html', user=user, assets=assets_list, metrics=metrics)

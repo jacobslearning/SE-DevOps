@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, flash, url_for, redirect, session
-from routes.utils import login_required, query_db, execute_db
 from werkzeug.security import generate_password_hash, check_password_hash
+from routes.utils import login_required
+from database import db
+from models import User
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -9,15 +11,17 @@ def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        role = 'User' 
+        role = 'User'
 
         if not username or not password:
             flash('Username and password are required.', 'danger')
-        elif query_db('SELECT id FROM User WHERE username = ?', [username], one=True):
+        elif User.query.filter_by(username=username).first():
             flash('Username is already taken.', 'danger')
         else:
             password_hash = generate_password_hash(password)
-            execute_db('INSERT INTO User (username, password_hash, role) VALUES (?, ?, ?)', (username, password_hash, role))
+            new_user = User(username=username, password_hash=password_hash, role=role)
+            db.session.add(new_user)
+            db.session.commit()
             flash('Registration successful. Please log in.', 'success')
             return redirect(url_for('auth.login'))
 
@@ -28,21 +32,21 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
-        user = query_db('SELECT * FROM User WHERE username = ?', [username], one=True)
-        
+
+        user = User.query.filter_by(username=username).first()
+
         if user is None:
             flash('Incorrect username.', 'danger')
-        elif not check_password_hash(user['password_hash'], password):
+        elif not check_password_hash(user.password_hash, password):
             flash('Incorrect password.', 'danger')
         else:
             session.clear()
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['role'] = user['role']
-            flash(f'Welcome, {user["username"]}!', 'success')
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = user.role
+            flash(f'Welcome, {user.username}!', 'success')
             return redirect(url_for('dashboard.dashboard'))
-            
+
     return render_template('login.html')
 
 @auth_blueprint.route('/logout', methods=['POST'])

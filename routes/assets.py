@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, flash, url_for, redirect
 from datetime import datetime
-from routes.utils import login_required, current_user, get_db
+from routes.utils import login_required, current_user
+from database import db
+from models import Asset, User, Department
 
 assets_blueprint = Blueprint('assets', __name__)
 
@@ -8,51 +10,84 @@ assets_blueprint = Blueprint('assets', __name__)
 @login_required
 def assets():
     user = current_user()
-    connection = get_db()
-    cursor = connection.cursor()
 
-    if user['role'] == 'Admin':
-         cursor.execute('''
-            SELECT a.*, u.username AS owner_username, d.name AS department_name
-            FROM Asset a
-            LEFT JOIN User u ON a.owner_id = u.id
-            LEFT JOIN Department d ON a.department_id = d.id
-        ''')
+    if user.role == 'Admin':
+        assets_query = (
+            Asset.query
+            .join(User, Asset.owner_id == User.id)
+            .join(Department, Asset.department_id == Department.id)
+            .add_columns(
+                Asset.id, Asset.name, Asset.description, Asset.type, Asset.serial_number,
+                Asset.date_created, Asset.in_use, Asset.approved,
+                Asset.owner_id, Asset.department_id,
+                User.username.label("owner_username"),
+                Department.name.label("department_name")
+            )
+        )
     else:
-        cursor.execute('''
-            SELECT a.*, u.username AS owner_username, d.name AS department_name
-            FROM Asset a
-            LEFT JOIN User u ON a.owner_id = u.id
-            LEFT JOIN Department d ON a.department_id = d.id
-            WHERE a.owner_id = ?
-        ''', (user['id'],))
+        assets_query = (
+            Asset.query
+            .filter_by(owner_id=user.id)
+            .join(User, Asset.owner_id == User.id)
+            .join(Department, Asset.department_id == Department.id)
+            .add_columns(
+                Asset.id, Asset.name, Asset.description, Asset.type, Asset.serial_number,
+                Asset.date_created, Asset.in_use, Asset.approved,
+                Asset.owner_id, Asset.department_id,
+                User.username.label("owner_username"),
+                Department.name.label("department_name")
+            )
+        )
 
-    assets = cursor.fetchall()
+    assets_list = [
+         {
+            "id": asset.id,
+            "name": asset.name,
+            "description": asset.description,
+            "type": asset.type,
+            "serial_number": asset.serial_number,
+            "date_created": asset.date_created.strftime("%Y-%m-%d %H:%M:%S"),
+            "in_use": "1" if asset.in_use else "0",  
+            "approved": "1" if asset.approved else "0",    
+            "owner_id": str(asset.owner_id),            
+            "department_id": str(asset.department_id) if asset.department_id else "",
+            "owner_username": asset.owner_username,
+            "department_name": asset.department_name
+        }
+        for asset in assets_query.all()
+    ]
 
-    cursor.execute("SELECT * FROM Department")
-    departments = cursor.fetchall()
-    cursor.execute("SELECT id, username FROM User ORDER BY username ASC")
-    users = cursor.fetchall()
+    departments = Department.query.all()
+    users = User.query.order_by(User.username.asc()).all()
 
-    return render_template('assets.html', assets=assets, user=user, departments=departments, users=users)
+    return render_template(
+        'assets.html',
+        assets=assets_list,
+        user=user,
+        departments=departments,
+        users=users
+    )
 
 @assets_blueprint.route('/asset/create', methods=['POST'])
 @login_required
 def create_asset():
     data = request.form
-    connection = get_db()
-    cursor = connection.cursor()
+    date_created = datetime.now()
 
-    date_created = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    new_asset = Asset(
+        name=data['name'],
+        description=data['description'],
+        type=data['type'],
+        serial_number=data['serial_number'],
+        date_created=date_created,
+        in_use=bool(int(data.get('in_use', 1))),
+        approved=bool(int(data.get('approved', 0))),
+        owner_id=data['assigned_user_id'],
+        department_id=data['department_id']
+    )
 
-    cursor.execute("""
-        INSERT INTO Asset (name, description, type, serial_number, date_created, in_use, approved, owner_id, department_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (
-        data['name'], data['description'], data['type'], data['serial_number'], date_created,
-        int(data.get('in_use', 1)),int(data.get('approved', 0)), data['assigned_user_id'], data['department_id']
-    ))
-    connection.commit()
+    db.session.add(new_asset)
+    db.session.commit()
     flash("Asset created and awaiting approval", "success")
     return redirect(url_for('assets.assets'))
 
@@ -61,28 +96,24 @@ def create_asset():
 def edit_asset(asset_id):
     data = request.form
     user = current_user()
-    connection = get_db()
-    cursor = connection.cursor()
 
-    cursor.execute("SELECT * FROM Asset WHERE id = ?", (asset_id,))
-    asset = cursor.fetchone()
+    asset = Asset.query.get_or_404(asset_id)
 
-    if asset is None or (user['role'] != 'Admin' and asset['owner_id'] != user['id']):
+    if user.role != 'Admin' and asset.owner_id != user.id:
         flash("Unauthorised Access", "danger")
         return redirect(url_for('assets.assets'))
 
-    cursor.execute("""
-        UPDATE Asset SET
-        name = ?, description = ?, type = ?, serial_number = ?, in_use = ?, department_id = ?, owner_id = ?,
-        approved = ?
-        WHERE id = ?
-    """, (
-        data['name'], data['description'], data['type'], data['serial_number'],
-        int(data.get('in_use', 1)), data['department_id'], data['assigned_user_id'],
-        int(data.get('approved', 0)) if user['role'] == 'Admin' else asset['approved'],
-        asset_id
-    ))
-    connection.commit()
+    asset.name = data['name']
+    asset.description = data['description']
+    asset.type = data['type']
+    asset.serial_number = data['serial_number']
+    asset.in_use = True if data.get('in_use') == "1" else False
+    asset.department_id = int(data['department_id'])
+    asset.owner_id = int(data['assigned_user_id'])
+
+    if user.role == 'Admin':
+        asset.approved = True if data.get('approved') == "1" else False
+    db.session.commit()
     flash("Asset updated", "success")
     return redirect(url_for('assets.assets'))
 
@@ -90,18 +121,14 @@ def edit_asset(asset_id):
 @login_required
 def delete_asset(asset_id):
     user = current_user()
-    connection = get_db()
-    cursor = connection.cursor()
+    asset = Asset.query.get_or_404(asset_id)
 
-    cursor.execute("SELECT * FROM Asset WHERE id = ?", (asset_id,))
-    asset = cursor.fetchone()
-
-    if asset is None or (user['role'] != 'Admin' and asset['owner_id'] != user['id']):
+    if user.role != 'Admin' and asset.owner_id != user.id:
         flash("Unauthorised Access", "danger")
         return redirect(url_for('assets.assets'))
 
-    cursor.execute("DELETE FROM Asset WHERE id = ?", (asset_id,))
-    connection.commit()
+    db.session.delete(asset)
+    db.session.commit()
     flash("Asset deleted", "info")
     return redirect(url_for('assets.assets'))
 
@@ -109,13 +136,12 @@ def delete_asset(asset_id):
 @login_required
 def approve_asset(asset_id):
     user = current_user()
-    if user['role'] != 'Admin':
+    if user.role != 'Admin':
         flash("Unauthorised Access", "danger")
         return redirect(url_for('assets.assets'))
 
-    connection = get_db()
-    cursor = connection.cursor()
-    cursor.execute("UPDATE Asset SET approved = 1 WHERE id = ?", (asset_id,))
-    connection.commit()
+    asset = Asset.query.get_or_404(asset_id)
+    asset.approved = True
+    db.session.commit()
     flash("Asset approved", "success")
     return redirect(url_for('assets.assets'))
