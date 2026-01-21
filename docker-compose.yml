@@ -34,5 +34,18 @@ services:
       retries: 10
       start_period: 5s
 
+  tests:
+    build: .
+    container_name: ITAM_tests
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SQLALCHEMY_DATABASE_URI: postgresql://postgres:postgres@db:5432/ITAM
+      IN_DOCKER: "1"
+    volumes:
+      - .:/app
+    command: sh -c "python -m pytest tests"
+
 volumes:
   postgres_data:
