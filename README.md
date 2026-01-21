@@ -1,10 +1,10 @@
 ## About This Project
 
-This project was completed by **Jacob S** for the **AC0 Software Engineering & Agile QA** module.
+This project was completed by **Jacob S** for the **Software Engineering & DevOps** module.
 
 ## Hosted Online
 
-The application can be accessed at: **https://jacob-s-sea-project-it-asset-manager.onrender.com**
+The application can be accessed at: **link**
 
 ## Setup
 
