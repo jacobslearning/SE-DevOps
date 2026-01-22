@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>IT Asset Manager</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/logs.css') }}"
+    />
+  </head>
+  <body>
+    <div class="logs-container">
+      <h2 class="text-center">Activity Logs</h2>
+
+      <nav class="nav-links">
+        <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
+        <a href="{{ url_for('assets.assets') }}">Assets</a>
+        <a href="{{ url_for('departments.departments') }}">Departments</a>
+        <a href="{{ url_for('users.users') }}">Users</a>
+      </nav>
+
+      <input type="text" id="searchBar" placeholder="Search logs..." />
+      <table>
+        <thead>
+          <tr>
+            <th>User ID</th>
+            <th>Action</th>
+            <th>Timestamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td class="user">{{ log.user_id }}</td>
+            <td class="action">{{ log.action }}</td>
+            <td class="timestamp">{{ log.timestamp }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3">No logs found.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %}
+      <div class="flash-messages">
+        {% for category, message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %} {% endwith %}
+    </div>
+    <script>
+      document
+        .getElementById("searchBar")
+        .addEventListener("input", function () {
+          const filter = this.value.toLowerCase();
+          const rows = document.querySelectorAll("table tbody tr");
+
+          rows.forEach((row) => {
+            const rowText = row.textContent.toLowerCase();
+            row.style.display = rowText.includes(filter) ? "" : "none";
+          });
+        });
+    </script>
+  </body>
+</html>

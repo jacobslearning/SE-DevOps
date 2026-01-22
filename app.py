@@ -7,6 +7,7 @@ from routes.auth import auth_blueprint
 from routes.dashboard import dashboard_blueprint
 from routes.departments import departments_blueprint
 from routes.users import users_blueprint
+from routes.logs import logs_blueprint
 
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
@@ -23,6 +24,7 @@ app.register_blueprint(auth_blueprint)
 app.register_blueprint(dashboard_blueprint)
 app.register_blueprint(departments_blueprint)
 app.register_blueprint(users_blueprint)
+app.register_blueprint(logs_blueprint)
 
 @app.errorhandler(404)
 def page_not_found(e):

@@ -15,6 +15,11 @@ class User(db.Model):
 
     assets = db.relationship("Asset", back_populates="owner", lazy="dynamic")
 
+    logs = db.relationship(
+        "Log",
+        back_populates="user",
+    )
+
     def __repr__(self):
         return f"<User {self.username} ({self.role})>"
 
