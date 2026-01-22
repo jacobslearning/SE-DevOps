@@ -71,7 +71,7 @@ jobs:
           pip install pytest
 
       - name: Run pytest
-        run: pytest -v
+        run: python -m pytest tests
   build:
     name: Docker
     runs-on: ubuntu-latest
