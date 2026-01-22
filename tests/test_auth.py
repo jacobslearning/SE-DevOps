@@ -1,7 +1,7 @@
 import pytest
 from werkzeug.security import generate_password_hash
 from utils import login_as_user
-from models import User, db
+from models import User, db, Log
 
 @pytest.fixture(autouse=True)
 def seed_auth(client):
@@ -27,6 +27,10 @@ def test_register_user(client):
     )
     assert response.status_code == 200
     assert b"Registration successful. Please log in" in response.data
+
+    log = Log.query.filter(Log.action.contains("Registered account")).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert "Registered account" in log.action
 
 def test_register_user_no_details(client):
     response = client.post("/register", follow_redirects=True)
@@ -69,9 +73,17 @@ def test_login(client):
     assert response.status_code == 200
     assert b"Welcome, user!" in response.data
 
+    log = Log.query.filter(Log.action.contains("Logged in")).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert "Logged in" in log.action
+
 def test_logout(client):
     login_as_user(client)
     response = client.post("/logout", data={}, follow_redirects=True)
     assert response.status_code == 200
     assert b"You have been logged out." in response.data
     assert b"Login" in response.data
+
+    log = Log.query.filter(Log.action.contains("Logged out")).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert "Logged out" in log.action
