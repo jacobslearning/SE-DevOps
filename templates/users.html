@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -73,7 +73,11 @@
                 <button
                   type="submit"
                   class="btn btn-delete"
-                  onclick="return confirm('Delete this user? This operation will remove all related assets.');"
+                  onclick="
+                    return confirm(
+                      'Delete this user? This operation will remove all related assets.',
+                    );
+                  "
                 >
                   Delete
                 </button>

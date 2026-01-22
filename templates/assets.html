@@ -59,7 +59,7 @@
             <td>{{ asset['owner_username'] or '—' }}</td>
             {% endif %}
             <td>
-              {% if user['role'] == 'Admin' and not asset['approved'] %}
+              {% if user['role'] == 'Admin' and not asset['approved']|int %}
               <form
                 method="post"
                 action="{{ url_for('assets.approve_asset', asset_id=asset['id']) }}"
@@ -73,8 +73,7 @@
                   Approve
                 </button>
               </form>
-              {% endif %} {% if user['role'] == 'Admin' or asset['owner_id'] ==
-              user['id'] %}
+              {% endif %} {% if user['role'] == 'Admin' or asset['owner_id']|int == user['id'] %}
               <button
                 class="btn btn-edit"
                 data-id="{{ asset['id'] }}"
