@@ -3,8 +3,9 @@ from werkzeug.security import generate_password_hash
 from utils import login_as_user
 from models import User, db, Log
 
+
 @pytest.fixture(autouse=True)
-def seed_auth(client):
+def seed_auth():
     password_hash = generate_password_hash("password")
 
     admin = User(username="admin", password_hash=password_hash, role="Admin")
@@ -13,11 +14,13 @@ def seed_auth(client):
     db.session.add_all([admin, user])
     db.session.commit()
 
+
 def test_login_page_loads(client):
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200
     assert b"Login" in response.data
     assert b"Register" in response.data
+
 
 def test_register_user(client):
     response = client.post(
@@ -28,14 +31,20 @@ def test_register_user(client):
     assert response.status_code == 200
     assert b"Registration successful. Please log in" in response.data
 
-    log = Log.query.filter(Log.action.contains("Registered account")).order_by(Log.timestamp.desc()).first()
+    log = (
+        Log.query.filter(Log.action.contains("Registered account"))
+        .order_by(Log.timestamp.desc())
+        .first()
+    )
     assert log is not None
     assert "Registered account" in log.action
+
 
 def test_register_user_no_details(client):
     response = client.post("/register", follow_redirects=True)
     assert response.status_code == 200
     assert b"Username and password are required." in response.data
+
 
 def test_register_username_taken(client):
     response = client.post(
@@ -46,6 +55,7 @@ def test_register_username_taken(client):
     assert response.status_code == 200
     assert b"Username is already taken." in response.data
 
+
 def test_login_incorrect_username(client):
     response = client.post(
         "/login",
@@ -54,6 +64,7 @@ def test_login_incorrect_username(client):
     )
     assert response.status_code == 200
     assert b"Incorrect username." in response.data
+
 
 def test_login_incorrect_password(client):
     response = client.post(
@@ -64,6 +75,7 @@ def test_login_incorrect_password(client):
     assert response.status_code == 200
     assert b"Incorrect password." in response.data
 
+
 def test_login(client):
     response = client.post(
         "/login",
@@ -73,9 +85,14 @@ def test_login(client):
     assert response.status_code == 200
     assert b"Welcome, user!" in response.data
 
-    log = Log.query.filter(Log.action.contains("Logged in")).order_by(Log.timestamp.desc()).first()
+    log = (
+        Log.query.filter(Log.action.contains("Logged in"))
+        .order_by(Log.timestamp.desc())
+        .first()
+    )
     assert log is not None
     assert "Logged in" in log.action
+
 
 def test_logout(client):
     login_as_user(client)
@@ -84,6 +101,10 @@ def test_logout(client):
     assert b"You have been logged out." in response.data
     assert b"Login" in response.data
 
-    log = Log.query.filter(Log.action.contains("Logged out")).order_by(Log.timestamp.desc()).first()
+    log = (
+        Log.query.filter(Log.action.contains("Logged out"))
+        .order_by(Log.timestamp.desc())
+        .first()
+    )
     assert log is not None
     assert "Logged out" in log.action

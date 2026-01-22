@@ -6,11 +6,13 @@ from tests.utils import (
     TEST_DB_URL,
 )
 
+
 @pytest.fixture(scope="session", autouse=True)
 def database():
     create_test_database()
     yield
     drop_test_database()
+
 
 @pytest.fixture
 def client():

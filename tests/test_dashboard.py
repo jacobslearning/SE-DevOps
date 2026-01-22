@@ -4,8 +4,9 @@ from utils import login_as_admin, login_as_user
 from models import User, Department, Asset, db
 from datetime import datetime
 
+
 @pytest.fixture(autouse=True)
-def seed_dashboard(client):
+def seed_dashboard():
     password_hash = generate_password_hash("password")
 
     admin = User(username="admin", password_hash=password_hash, role="Admin")
@@ -56,12 +57,14 @@ def seed_dashboard(client):
     db.session.add_all(assets)
     db.session.commit()
 
+
 def test_dashboard_page_loads(client):
     login_as_admin(client)
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200
     assert b"All Pending Assets" in response.data
     assert b"Welcome, admin!" in response.data
+
 
 def test_metrics_load(client):
     login_as_admin(client)
@@ -76,11 +79,13 @@ def test_metrics_load(client):
     assert b"2" in response.data
     assert b"6" in response.data
 
+
 def test_role_loads_as_admin(client):
     login_as_admin(client)
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200
     assert b"Role: Admin" in response.data
+
 
 def test_role_loads_as_user(client):
     login_as_user(client)

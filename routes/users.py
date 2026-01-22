@@ -6,6 +6,7 @@ from models import User, Asset
 
 users_blueprint = Blueprint('users', __name__)
 
+
 @users_blueprint.route('/users')
 @login_required
 def users():
@@ -18,6 +19,7 @@ def users():
     log_action(user.id, f"Users viewed by {user.username} (ID: {user.id})")
     return render_template('users.html', users=all_users, user=user)
 
+
 @users_blueprint.route('/user/edit/<int:user_id>', methods=['POST'])
 @login_required
 def edit_user(user_id):
@@ -29,7 +31,11 @@ def edit_user(user_id):
 
     # Access control
     if user.role != 'Admin' and user.id != user_id:
-        log_action(user.id, f"User (ID: {user_id}) tried to be edited by {user.username} (ID: {user.id})")
+        log_action(
+            user.id,
+            f"User (ID: {user_id}) tried to be edited by "
+            f"{user.username} (ID: {user.id})"
+        )
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
@@ -51,10 +57,15 @@ def edit_user(user_id):
 
     target_user.role = role
     db.session.commit()
-    log_action(user.id, f"User (ID: {target_user.id}) updated by {user.username} (ID: {user.id})")
+    log_action(
+        user.id,
+        f"User (ID: {target_user.id}) updated by "
+        f"{user.username} (ID: {user.id})"
+    )
 
     flash(f"User {username} updated", "success")
     return redirect(url_for('users.users'))
+
 
 @users_blueprint.route('/user/delete/<int:user_id>', methods=['POST'])
 @login_required
@@ -62,7 +73,11 @@ def delete_user(user_id):
     user = current_user()
 
     if user.role != 'Admin' and user.id != user_id:
-        log_action(user.id, f"User (ID: {user_id}) tried to be deleted by {user.username} (ID: {user.id})")
+        log_action(
+            user.id,
+            f"User (ID: {user_id}) tried to be deleted by "
+            f"{user.username} (ID: {user.id})"
+        )
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
@@ -81,8 +96,13 @@ def delete_user(user_id):
     if user.id == user_id:
         log_action(user.id, f"User (ID: {user.id}) deleted themself")
         return redirect(url_for('auth.login'))
-    log_action(user.id, f"User (ID: {target_user.id}) deleted by {user.username} (ID: {user.id})")
+    log_action(
+        user.id,
+        f"User (ID: {target_user.id}) deleted by "
+        f"{user.username} (ID: {user.id})"
+    )
     return redirect(url_for('users.users'))
+
 
 @users_blueprint.route('/user/promote/<int:user_id>', methods=['POST'])
 @login_required
@@ -90,17 +110,26 @@ def promote_user(user_id):
     user = current_user()
 
     if user.role != 'Admin':
-        log_action(user.id, f"User (ID: {user_id}) tried to be promoted by {user.username} (ID: {user.id})")
+        log_action(
+            user.id,
+            f"User (ID: {user_id}) tried to be promoted by "
+            f"{user.username} (ID: {user.id})"
+        )
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
     target_user = User.query.get_or_404(user_id)
     target_user.role = "Admin"
     db.session.commit()
-    log_action(user.id, f"User (ID: {target_user.id}) promoted to Admin by {user.username} (ID: {user.id})")
+    log_action(
+        user.id,
+        f"User (ID: {target_user.id}) promoted to Admin by "
+        f"{user.username} (ID: {user.id})"
+    )
 
-    flash(f"User promoted to Admin", "success")
+    flash("User promoted to Admin", "success")
     return redirect(url_for('users.users'))
+
 
 @users_blueprint.route('/user/create', methods=['POST'])
 @login_required
@@ -108,7 +137,11 @@ def create_user():
     user = current_user()
 
     if user.role != 'Admin':
-        log_action(user.id, f"User creation attempt by {user.username} (ID: {user.id})")
+        log_action(
+            user.id,
+            f"User creation attempt by {user.username} "
+            f"(ID: {user.id})"
+        )
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
@@ -121,10 +154,18 @@ def create_user():
         flash("A user already exists with this name", "info")
         return redirect(url_for('users.users'))
 
-    new_user = User(username=username, password_hash=password_hash, role=role)
+    new_user = User(
+        username=username,
+        password_hash=password_hash,
+        role=role
+    )
     db.session.add(new_user)
     db.session.commit()
-    log_action(user.id, f"User (ID: {new_user.id}) created by {user.username} (ID: {user.id})")
+    log_action(
+        user.id,
+        f"User (ID: {new_user.id}) created by "
+        f"{user.username} (ID: {user.id})"
+    )
 
     flash(f"User {username} created", "success")
     return redirect(url_for('users.users'))

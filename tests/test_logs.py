@@ -4,13 +4,13 @@ from utils import login_as_admin, login_as_user
 from models import User, Log, db
 from datetime import datetime
 
+
 @pytest.fixture(autouse=True)
-def seed_logs(client):
+def seed_logs():
     password_hash = generate_password_hash("password")
 
     admin = User(username="admin", password_hash=password_hash, role="Admin")
     user = User(username="user", password_hash=password_hash, role="User")
-
 
     db.session.add_all([admin, user])
     db.session.commit()
@@ -31,12 +31,14 @@ def seed_logs(client):
     db.session.add_all(logs)
     db.session.commit()
 
+
 def test_logs_page_loads_admin(client):
     login_as_admin(client)
     response = client.get("/logs", follow_redirects=True)
     assert response.status_code == 200
     assert b"Activity Logs" in response.data
     assert b"Logged in as admin (ID:1)" in response.data
+
 
 def test_logs_page_loads_user(client):
     login_as_user(client)

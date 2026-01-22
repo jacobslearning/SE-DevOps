@@ -1,13 +1,14 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash
 
 from database import db
 from models import User, Department, Asset, Log
 from utils import login_as_admin, login_as_user
 
+
 @pytest.fixture(autouse=True)
-def seed_assets(client):
+def seed_assets():
     password_hash = generate_password_hash("password")
 
     admin = User(username="admin", password_hash=password_hash, role="Admin")
@@ -25,7 +26,7 @@ def seed_assets(client):
             description="Work laptop",
             type="Laptop",
             serial_number="SN12345AL32323jjjj",
-            date_created=datetime.utcnow(),
+            date_created=datetime.now(timezone.utc),
             in_use=True,
             approved=True,
             owner_id=user.id,
@@ -36,7 +37,7 @@ def seed_assets(client):
             description="Company phone",
             type="Phone",
             serial_number="SN12346AL31ddddeaaac",
-            date_created=datetime.utcnow(),
+            date_created=datetime.now(timezone.utc),
             in_use=True,
             approved=True,
             owner_id=user.id,
@@ -47,7 +48,7 @@ def seed_assets(client):
             description="Office desktop",
             type="Desktop",
             serial_number="SN22345BO38791389173",
-            date_created=datetime.utcnow(),
+            date_created=datetime.now(timezone.utc),
             in_use=True,
             approved=False,
             owner_id=user.id,
@@ -58,12 +59,14 @@ def seed_assets(client):
     db.session.add_all(assets)
     db.session.commit()
 
+
 def test_assets_page_loads(client):
     login_as_admin(client)
     response = client.get("/assets", follow_redirects=True)
 
     assert response.status_code == 200
     assert b"Create New Asset" in response.data
+
 
 def test_asset_edit(client):
     login_as_admin(client)
@@ -86,10 +89,13 @@ def test_asset_edit(client):
     assert response.status_code == 200
     assert b"Asset updated" in response.data
 
-    log = Log.query.filter(Log.action.contains("iphone 14 pro max test")).order_by(Log.timestamp.desc()).first()
+    log = Log.query.filter(
+        Log.action.contains("iphone 14 pro max test")
+    ).order_by(Log.timestamp.desc()).first()
     assert log is not None
     assert "updated" in log.action
     assert "iphone 14 pro max test" in log.action
+
 
 def test_asset_delete(client):
     login_as_admin(client)
@@ -99,10 +105,13 @@ def test_asset_delete(client):
     assert response.status_code == 200
     assert b"Asset deleted" in response.data
 
-    log = Log.query.filter(Log.action.contains("deleted")).order_by(Log.timestamp.desc()).first()
+    log = Log.query.filter(
+        Log.action.contains("deleted")
+    ).order_by(Log.timestamp.desc()).first()
     assert log is not None
     assert "deleted" in log.action
     assert "2" in log.action or "Asset" in log.action
+
 
 def test_create_asset(client):
     login_as_admin(client)
@@ -125,11 +134,14 @@ def test_create_asset(client):
     assert response.status_code == 200
     assert b"Asset created and awaiting approval" in response.data
 
-    log = Log.query.filter(Log.action.contains("iphone 14 pro max test test")).order_by(Log.timestamp.desc()).first()
+    log = Log.query.filter(
+        Log.action.contains("iphone 14 pro max test test")
+    ).order_by(Log.timestamp.desc()).first()
     assert log is not None
     assert "Asset" in log.action
     assert "created" in log.action
     assert "iphone 14 pro max test test" in log.action
+
 
 def test_create_asset_requires_login(client):
     response = client.post(
@@ -149,15 +161,19 @@ def test_create_asset_requires_login(client):
 
     assert b"Login" in response.data or response.status_code == 403
 
+
 def test_asset_user_cannot_approve(client):
     login_as_user(client)
 
     response = client.post("/asset/approve/3", follow_redirects=True)
 
     assert b"Unauthorised Access" in response.data
-    log = Log.query.filter(Log.action.contains("Asset (ID: 3) tried to be approved")).order_by(Log.timestamp.desc()).first()
+    log = Log.query.filter(
+        Log.action.contains("Asset (ID: 3) tried to be approved")
+    ).order_by(Log.timestamp.desc()).first()
     assert log is not None
     assert "tried to be approved" in log.action
+
 
 def test_asset_approve(client):
     login_as_admin(client)
@@ -173,8 +189,15 @@ def test_asset_approve(client):
     assert response.status_code == 200
     assert b"Asset approved" in response.data
 
+    asset_id = unapproved_asset.id
+    asset_name = unapproved_asset.name
     log = Log.query.filter(
-        Log.action.contains(f"Asset (ID: {unapproved_asset.id}, Name: {unapproved_asset.name}) approved by")
+        Log.action.contains(
+            f"Asset (ID: {asset_id}, Name: {asset_name}) approved by"
+        )
     ).order_by(Log.timestamp.desc()).first()
     assert log is not None
-    assert f"Asset (ID: {unapproved_asset.id}, Name: {unapproved_asset.name}) approved by" in log.action
+    assert (
+        f"Asset (ID: {asset_id}, Name: {asset_name}) approved by"
+        in log.action
+    )

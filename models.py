@@ -30,7 +30,11 @@ class Department(db.Model):
     id = db.Column(db.Integer, primary_key=True, index=True)
     name = db.Column(db.String(100), nullable=False)
 
-    assets = db.relationship("Asset", back_populates="department", lazy="dynamic")
+    assets = db.relationship(
+        "Asset",
+        back_populates="department",
+        lazy="dynamic"
+    )
 
     def __repr__(self):
         return f"<Department {self.name}>"
@@ -39,7 +43,7 @@ class Department(db.Model):
 class Asset(db.Model):
     __tablename__ = "assets"
 
-    id = db.Column(db.Integer, primary_key=True, index = True)
+    id = db.Column(db.Integer, primary_key=True, index=True)
     name = db.Column(db.String(150), nullable=False)
     description = db.Column(db.Text)
     type = db.Column(db.String(50))
@@ -66,12 +70,12 @@ class Asset(db.Model):
         nullable=True
     )
 
-    # relationships
     owner = db.relationship("User", back_populates="assets")
     department = db.relationship("Department", back_populates="assets")
 
     def __repr__(self):
         return f"<Asset {self.name} ({self.type})>"
+
 
 class Log(db.Model):
     __tablename__ = "logs"

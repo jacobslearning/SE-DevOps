@@ -3,11 +3,13 @@ from functools import wraps
 from models import User, Log
 from database import db
 
+
 def current_user():
     """Get current logged in user"""
     if 'user_id' in session:
         return User.query.session.get(User, session['user_id'])
     return None
+
 
 def login_required(f):
     """If login is required to access route"""
@@ -19,6 +21,7 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+
 def admin_required(f):
     """If Admin role required to access route"""
     @wraps(f)
@@ -29,6 +32,7 @@ def admin_required(f):
             return redirect(url_for('dashboard.dashboard'))
         return f(*args, **kwargs)
     return decorated_function
+
 
 def log_action(user_id, action):
     """Log user actions"""

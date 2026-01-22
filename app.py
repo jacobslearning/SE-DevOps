@@ -26,9 +26,11 @@ app.register_blueprint(departments_blueprint)
 app.register_blueprint(users_blueprint)
 app.register_blueprint(logs_blueprint)
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return redirect('/')
+
 
 if __name__ == '__main__':
     host = os.getenv("FLASK_HOST", "127.0.0.1")
