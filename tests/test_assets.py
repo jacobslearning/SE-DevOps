@@ -3,7 +3,7 @@ from datetime import datetime
 from werkzeug.security import generate_password_hash
 
 from database import db
-from models import User, Department, Asset
+from models import User, Department, Asset, Log
 from utils import login_as_admin, login_as_user
 
 @pytest.fixture(autouse=True)
@@ -86,6 +86,11 @@ def test_asset_edit(client):
     assert response.status_code == 200
     assert b"Asset updated" in response.data
 
+    log = Log.query.filter(Log.action.contains("iphone 14 pro max test")).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert "updated" in log.action
+    assert "iphone 14 pro max test" in log.action
+
 def test_asset_delete(client):
     login_as_admin(client)
 
@@ -93,6 +98,11 @@ def test_asset_delete(client):
 
     assert response.status_code == 200
     assert b"Asset deleted" in response.data
+
+    log = Log.query.filter(Log.action.contains("deleted")).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert "deleted" in log.action
+    assert "2" in log.action or "Asset" in log.action
 
 def test_create_asset(client):
     login_as_admin(client)
@@ -114,6 +124,12 @@ def test_create_asset(client):
 
     assert response.status_code == 200
     assert b"Asset created and awaiting approval" in response.data
+
+    log = Log.query.filter(Log.action.contains("iphone 14 pro max test test")).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert "Asset" in log.action
+    assert "created" in log.action
+    assert "iphone 14 pro max test test" in log.action
 
 def test_create_asset_requires_login(client):
     response = client.post(
@@ -139,11 +155,26 @@ def test_asset_user_cannot_approve(client):
     response = client.post("/asset/approve/3", follow_redirects=True)
 
     assert b"Unauthorised Access" in response.data
+    log = Log.query.filter(Log.action.contains("Asset (ID: 3) tried to be approved")).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert "tried to be approved" in log.action
 
 def test_asset_approve(client):
     login_as_admin(client)
 
-    response = client.post("/asset/approve/3", follow_redirects=True)
+    unapproved_asset = Asset.query.filter_by(approved=False).first()
+    assert unapproved_asset is not None
+
+    response = client.post(
+        f"/asset/approve/{unapproved_asset.id}",
+        follow_redirects=True
+    )
 
     assert response.status_code == 200
     assert b"Asset approved" in response.data
+
+    log = Log.query.filter(
+        Log.action.contains(f"Asset (ID: {unapproved_asset.id}, Name: {unapproved_asset.name}) approved by")
+    ).order_by(Log.timestamp.desc()).first()
+    assert log is not None
+    assert f"Asset (ID: {unapproved_asset.id}, Name: {unapproved_asset.name}) approved by" in log.action

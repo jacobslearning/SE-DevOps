@@ -28,19 +28,3 @@ def logs():
         ],
         user=user
     )
-
-@logs_blueprint.route('/logs/delete/<int:log_id>', methods=['POST'])
-@login_required
-def delete_log(log_id):
-    user = current_user()
-    if user.role != 'Admin':
-        log_action(user.id, f"Log (ID: {log_id}) tried to be deleted by {user.username} (ID: {user.id})")
-        flash("Unauthorised Access", "danger")
-        return redirect(url_for('logs.logs'))
-
-    log = Log.query.get_or_404(log_id)
-    db.session.delete(log)
-    db.session.commit()
-    log_action(user.id, f"Log (ID: {log_id}) deleted by {user.username} (ID: {user.id})")
-    flash("Log deleted", "info")
-    return redirect(url_for('logs.logs'))
