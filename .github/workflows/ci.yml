@@ -56,7 +56,7 @@ jobs:
 
     env:
       FLASK_ENV: development
-      SQLALCHEMY_DATABASE_URI: sqlite:///:memory:
+      SQLALCHEMY_DATABASE_URI: sqlite:///test.db
 
     steps:
       - uses: actions/checkout@v4
