@@ -19,6 +19,9 @@
         <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
         <a href="{{ url_for('departments.departments') }}">Departments</a>
         <a href="{{ url_for('users.users') }}">Users</a>
+        {% if user['role'] == 'Admin' %}
+    <a href="{{ url_for('logs.logs') }}">Logs</a>
+  {% endif %}
       </nav>
 
       <button class="btn btn-create" id="openCreateModal">

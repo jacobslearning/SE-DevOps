@@ -20,6 +20,9 @@
         <a href="{{ url_for('dashboard.dashboard') }}">Dashboard</a>
         <a href="{{ url_for('assets.assets') }}">Assets</a>
         <a href="{{ url_for('users.users') }}">Users</a>
+        {% if user['role'] == 'Admin' %}
+    <a href="{{ url_for('logs.logs') }}">Logs</a>
+  {% endif %}
       </nav>
 
       {% if user['role'] == 'Admin' %}

@@ -44,6 +44,9 @@
         <a href="{{ url_for('assets.assets') }}">Assets</a>
         <a href="{{ url_for('departments.departments') }}">Departments</a>
         <a href="{{ url_for('users.users') }}">Users</a>
+        {% if user['role'] == 'Admin' %}
+    <a href="{{ url_for('logs.logs') }}">Logs</a>
+  {% endif %}
       </nav>
       <div class="pending-header">
         <h3 class="heading-text">
