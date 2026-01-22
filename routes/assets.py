@@ -46,7 +46,7 @@ def assets():
             "description": asset.description,
             "type": asset.type,
             "serial_number": asset.serial_number,
-            "date_created": asset.date_created.strftime("%Y-%m-%d %H:%M:%S"),
+            "date_created": asset.date_created.strftime("%Y-%m-%d %H:%M") if asset.date_created else None,
             "in_use": "1" if asset.in_use else "0",  
             "approved": "1" if asset.approved else "0",    
             "owner_id": str(asset.owner_id),            

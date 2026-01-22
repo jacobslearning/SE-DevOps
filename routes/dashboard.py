@@ -52,7 +52,7 @@ def dashboard():
             "description": asset.description,
             "type": asset.type,
             "serial_number": asset.serial_number,
-            "date_created": asset.date_created,
+            "date_created": asset.date_created.strftime("%Y-%m-%d %H:%M") if asset.date_created else None,
             "in_use": asset.in_use,
             "approved": asset.approved,
             "owner_username": asset.owner_username,
