@@ -13,10 +13,6 @@ def seed_users(client):
     db.session.add_all([admin, user])
     db.session.commit()
 
-    yield
-
-    db.session.rollback()
-
 def test_users_page_loads(client):
     login_as_admin(client)
     response = client.get("/users", follow_redirects=True)

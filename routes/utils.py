@@ -5,7 +5,7 @@ from models import User
 def current_user():
     """Get current logged in user"""
     if 'user_id' in session:
-        return User.query.get(session['user_id'])
+        return User.query.session.get(User, session['user_id'])
     return None
 
 def login_required(f):

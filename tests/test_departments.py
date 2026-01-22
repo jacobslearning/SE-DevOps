@@ -20,10 +20,6 @@ def seed_departments(client):
     db.session.add_all([admin, user, hr, cs, it, store_ops, security, marketing])
     db.session.commit()
 
-    yield
-
-    db.session.rollback()
-
 def test_departments_page_loads(client):
     login_as_admin(client)
     response = client.get("/departments", follow_redirects=True)

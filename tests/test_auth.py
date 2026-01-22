@@ -13,10 +13,6 @@ def seed_auth(client):
     db.session.add_all([admin, user])
     db.session.commit()
 
-    yield 
-
-    db.session.rollback()
-
 def test_login_page_loads(client):
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200

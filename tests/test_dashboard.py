@@ -56,10 +56,6 @@ def seed_dashboard(client):
     db.session.add_all(assets)
     db.session.commit()
 
-    yield
-
-    db.session.rollback()
-
 def test_dashboard_page_loads(client):
     login_as_admin(client)
     response = client.get("/dashboard", follow_redirects=True)

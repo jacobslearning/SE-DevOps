@@ -58,10 +58,6 @@ def seed_assets(client):
     db.session.add_all(assets)
     db.session.commit()
 
-    yield
-
-    db.session.rollback()
-
 def test_assets_page_loads(client):
     login_as_admin(client)
     response = client.get("/assets", follow_redirects=True)
