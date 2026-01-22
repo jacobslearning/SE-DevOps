@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, url_for, redirect
 from werkzeug.security import generate_password_hash
-from routes.utils import login_required, current_user
+from routes.utils import login_required, current_user, log_action
 from database import db
 from models import User, Asset
 
@@ -15,7 +15,7 @@ def users():
         all_users = User.query.all()
     else:
         all_users = [user]
-
+    log_action(user.id, f"Users viewed by {user.username} (ID: {user.id})")
     return render_template('users.html', users=all_users, user=user)
 
 @users_blueprint.route('/user/edit/<int:user_id>', methods=['POST'])
@@ -29,6 +29,7 @@ def edit_user(user_id):
 
     # Access control
     if user.role != 'Admin' and user.id != user_id:
+        log_action(user.id, f"User (ID: {user_id}) tried to be edited by {user.username} (ID: {user.id})")
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
@@ -37,6 +38,7 @@ def edit_user(user_id):
 
     # admins cant demote themself back to user
     if user.role == 'Admin' and user.id == user_id and role == 'User':
+        log_action(user.id, f"Admin (ID: {user.id}) tried to demote themself")
         flash("You cannot demote yourself to User", "info")
         return redirect(url_for('users.users'))
 
@@ -49,6 +51,7 @@ def edit_user(user_id):
 
     target_user.role = role
     db.session.commit()
+    log_action(user.id, f"User (ID: {target_user.id}) updated by {user.username} (ID: {user.id})")
 
     flash(f"User {username} updated", "success")
     return redirect(url_for('users.users'))
@@ -59,6 +62,7 @@ def delete_user(user_id):
     user = current_user()
 
     if user.role != 'Admin' and user.id != user_id:
+        log_action(user.id, f"User (ID: {user_id}) tried to be deleted by {user.username} (ID: {user.id})")
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
@@ -75,8 +79,9 @@ def delete_user(user_id):
 
     # If a user deleted themself
     if user.id == user_id:
+        log_action(user.id, f"User (ID: {user.id}) deleted themself")
         return redirect(url_for('auth.login'))
-
+    log_action(user.id, f"User (ID: {target_user.id}) deleted by {user.username} (ID: {user.id})")
     return redirect(url_for('users.users'))
 
 @users_blueprint.route('/user/promote/<int:user_id>', methods=['POST'])
@@ -85,12 +90,14 @@ def promote_user(user_id):
     user = current_user()
 
     if user.role != 'Admin':
+        log_action(user.id, f"User (ID: {user_id}) tried to be promoted by {user.username} (ID: {user.id})")
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
     target_user = User.query.get_or_404(user_id)
     target_user.role = "Admin"
     db.session.commit()
+    log_action(user.id, f"User (ID: {target_user.id}) promoted to Admin by {user.username} (ID: {user.id})")
 
     flash(f"User promoted to Admin", "success")
     return redirect(url_for('users.users'))
@@ -101,6 +108,7 @@ def create_user():
     user = current_user()
 
     if user.role != 'Admin':
+        log_action(user.id, f"User creation attempt by {user.username} (ID: {user.id})")
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
@@ -116,6 +124,7 @@ def create_user():
     new_user = User(username=username, password_hash=password_hash, role=role)
     db.session.add(new_user)
     db.session.commit()
+    log_action(user.id, f"User (ID: {new_user.id}) created by {user.username} (ID: {user.id})")
 
     flash(f"User {username} created", "success")
     return redirect(url_for('users.users'))

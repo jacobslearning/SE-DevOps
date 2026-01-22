@@ -67,3 +67,16 @@ class Asset(db.Model):
 
     def __repr__(self):
         return f"<Asset {self.name} ({self.type})>"
+
+class Log(db.Model):
+    __tablename__ = "logs"
+
+    id = db.Column(db.Integer, primary_key=True, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    action = db.Column(db.String(255), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    user = db.relationship("User", back_populates="logs")
+
+    def __repr__(self):
+        return f"<Log {self.action} by User {self.user_id}>"

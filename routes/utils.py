@@ -1,6 +1,7 @@
 from flask import session, flash, redirect, url_for
 from functools import wraps
-from models import User 
+from models import User, Log
+from database import db
 
 def current_user():
     """Get current logged in user"""
@@ -28,3 +29,10 @@ def admin_required(f):
             return redirect(url_for('dashboard.dashboard'))
         return f(*args, **kwargs)
     return decorated_function
+
+def log_action(user_id, action):
+    """Log user actions"""
+
+    log = Log(user_id=user_id, action=action)
+    db.session.add(log)
+    db.session.commit()

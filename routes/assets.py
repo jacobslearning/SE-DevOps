@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, flash, url_for, redirect
 from datetime import datetime
-from routes.utils import login_required, current_user
+from routes.utils import login_required, current_user, log_action
 from database import db
 from models import Asset, User, Department
 
@@ -59,7 +59,7 @@ def assets():
 
     departments = Department.query.all()
     users = User.query.order_by(User.username.asc()).all()
-
+    log_action(user.id, f"Assets viewed by {user.username} (ID: {user.id})")
     return render_template(
         'assets.html',
         assets=assets_list,
@@ -71,6 +71,7 @@ def assets():
 @assets_blueprint.route('/asset/create', methods=['POST'])
 @login_required
 def create_asset():
+    user = current_user()
     data = request.form
     date_created = datetime.now()
 
@@ -88,6 +89,7 @@ def create_asset():
 
     db.session.add(new_asset)
     db.session.commit()
+    log_action(user.id, f"Asset (ID: {new_asset.id}, Name: {new_asset.name}) created by {user.username} (ID: {user.id})")
     flash("Asset created and awaiting approval", "success")
     return redirect(url_for('assets.assets'))
 
@@ -100,6 +102,7 @@ def edit_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
     if user.role != 'Admin' and asset.owner_id != user.id:
+        log_action(user.id, f"Asset (ID: {asset.id}, Name: {asset.name}) tried to be updated by {user.username} (ID: {user.id})")
         flash("Unauthorised Access", "danger")
         return redirect(url_for('assets.assets'))
 
@@ -114,6 +117,7 @@ def edit_asset(asset_id):
     if user.role == 'Admin':
         asset.approved = True if data.get('approved') == "1" else False
     db.session.commit()
+    log_action(user.id, f"Asset (ID: {asset.id}, Name: {asset.name}) updated by {user.username} (ID: {user.id})")
     flash("Asset updated", "success")
     return redirect(url_for('assets.assets'))
 
@@ -124,11 +128,13 @@ def delete_asset(asset_id):
     asset = Asset.query.get_or_404(asset_id)
 
     if user.role != 'Admin' and asset.owner_id != user.id:
+        log_action(user.id, f"Asset (ID: {asset.id}, Name: {asset.name}) tried to be deleted by {user.username} (ID: {user.id})")
         flash("Unauthorised Access", "danger")
         return redirect(url_for('assets.assets'))
 
     db.session.delete(asset)
     db.session.commit()
+    log_action(user.id, f"Asset (ID: {asset.id}, Name: {asset.name}) deleted by {user.username} (ID: {user.id})")
     flash("Asset deleted", "info")
     return redirect(url_for('assets.assets'))
 
@@ -137,11 +143,13 @@ def delete_asset(asset_id):
 def approve_asset(asset_id):
     user = current_user()
     if user.role != 'Admin':
+        log_action(user.id, f"Asset (ID: {asset_id}) tried to be approved by {user.username} (ID: {user.id})")
         flash("Unauthorised Access", "danger")
         return redirect(url_for('assets.assets'))
 
     asset = Asset.query.get_or_404(asset_id)
     asset.approved = True
     db.session.commit()
+    log_action(user.id, f"Asset (ID: {asset.id}, Name: {asset.name}) approved by {user.username} (ID: {user.id})")
     flash("Asset approved", "success")
     return redirect(url_for('assets.assets'))
