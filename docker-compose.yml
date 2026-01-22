@@ -41,7 +41,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      SQLALCHEMY_DATABASE_URI: postgresql://postgres:postgres@db:5432/ITAM
+      SQLALCHEMY_DATABASE_URI: postgresql://postgres:postgres@db:5432/tests
       IN_DOCKER: "1"
     volumes:
       - .:/app
