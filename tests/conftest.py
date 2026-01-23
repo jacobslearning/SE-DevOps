@@ -21,8 +21,6 @@ def client():
         SQLALCHEMY_DATABASE_URI=TEST_DB_URL,
     )
 
-    # test
-
     with app.app_context():
         db.drop_all()
         db.create_all()
