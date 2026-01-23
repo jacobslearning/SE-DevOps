@@ -20,6 +20,7 @@ def client():
         TESTING=True,
         SQLALCHEMY_DATABASE_URI=TEST_DB_URL,
     )
+    # uhoh
 
     with app.app_context():
         db.drop_all()
