@@ -7,7 +7,7 @@ ADMIN_DB_URL = os.getenv(
 )
 TEST_DB_URL = os.getenv(
     "SQLALCHEMY_DATABASE_URI"
-).replace("itam", "tests")
+).replace("itam", "tests")  # test
 
 
 def create_test_database():
