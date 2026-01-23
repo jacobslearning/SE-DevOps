@@ -1,7 +1,13 @@
+import os
 from sqlalchemy import create_engine, text
-
-ADMIN_DB_URL = "postgresql://postgres:postgres@db:5432/ITAM"
-TEST_DB_URL = "postgresql://postgres:postgres@db:5432/tests"
+from dotenv import load_dotenv
+load_dotenv()
+ADMIN_DB_URL = os.getenv(
+    "SQLALCHEMY_DATABASE_URI"
+)
+TEST_DB_URL = os.getenv(
+    "SQLALCHEMY_DATABASE_URI"
+).replace("itam", "tests")
 
 
 def create_test_database():

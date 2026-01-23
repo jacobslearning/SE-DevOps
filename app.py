@@ -8,13 +8,13 @@ from routes.dashboard import dashboard_blueprint
 from routes.departments import departments_blueprint
 from routes.users import users_blueprint
 from routes.logs import logs_blueprint
-
+from dotenv import load_dotenv
+load_dotenv()
 app = Flask(__name__)
 app.logger.setLevel(logging.INFO)
 app.secret_key = 'test'
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    "SQLALCHEMY_DATABASE_URI",
-    "postgresql://postgres:postgres@db:5432/ITAM"
+    "SQLALCHEMY_DATABASE_URI"
 )
 db.init_app(app)
 
