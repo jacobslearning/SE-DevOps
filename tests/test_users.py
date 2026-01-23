@@ -2,17 +2,25 @@ import pytest
 from werkzeug.security import generate_password_hash
 from utils import login_as_admin
 from models import User, Log, db
+from app import app
 
 
 @pytest.fixture(autouse=True)
 def seed_users():
-    password_hash = generate_password_hash("password")
+    with app.app_context():
+        db.drop_all()
+        db.create_all()
+        password_hash = generate_password_hash("password")
 
-    admin = User(username="admin", password_hash=password_hash, role="Admin")
-    user = User(username="user", password_hash=password_hash, role="User")
+        admin = User(
+            username="admin", password_hash=password_hash, role="Admin"
+        )
+        user = User(
+            username="user", password_hash=password_hash, role="User"
+        )
 
-    db.session.add_all([admin, user])
-    db.session.commit()
+        db.session.add_all([admin, user])
+        db.session.commit()
 
 
 def test_users_page_loads(client):
