@@ -3,7 +3,6 @@ from database import db
 from app import create_app
 from tests.utils import (
     create_test_database,
-    drop_test_database,
     TEST_DB_URL,
 )
 
@@ -17,8 +16,6 @@ class TestConfig:
 @pytest.fixture(scope="session", autouse=True)
 def database():
     create_test_database()
-    yield
-    drop_test_database()
 
 
 @pytest.fixture(scope="session")
