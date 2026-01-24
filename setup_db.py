@@ -1,16 +1,13 @@
 from werkzeug.security import generate_password_hash
 from datetime import datetime
-from app import app
+from app import create_app
 from database import db
 from models import User, Department, Asset
-from tests.utils import ADMIN_DB_URL
 
 
 def init_db():
-    app.config.update(
-        TESTING=False,
-        SQLALCHEMY_DATABASE_URI=ADMIN_DB_URL,
-    )
+    app = create_app()
+    
     with app.app_context():
         # create all tables
         db.drop_all()

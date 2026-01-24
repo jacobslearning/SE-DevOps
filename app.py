@@ -44,6 +44,9 @@ def create_app(config_object=None):
     return app
 
 
+app = create_app()
+
+
 if __name__ == '__main__':
     app = create_app()
     host = os.getenv("FLASK_HOST", "127.0.0.1")

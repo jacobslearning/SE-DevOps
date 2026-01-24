@@ -8,8 +8,10 @@ from database import db
 @pytest.fixture(autouse=True)
 def seed_departments(app):
     with app.app_context():
-        db.drop_all()
-        db.create_all()
+        db.session.query(Department).delete()
+        db.session.query(User).delete()
+        db.session.query(Log).delete()
+        db.session.commit()
         password_hash = generate_password_hash("password")
 
         admin = User(
