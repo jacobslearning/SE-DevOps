@@ -7,7 +7,7 @@ from app import app
 
 
 @pytest.fixture(autouse=True)
-def seed_dashboard():
+def seed_dashboard(client):
     with app.app_context():
         db.drop_all()
         db.create_all()

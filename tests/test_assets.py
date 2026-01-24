@@ -8,7 +8,7 @@ from utils import login_as_admin, login_as_user
 
 
 @pytest.fixture(autouse=True)
-def seed_assets():
+def seed_assets(client):
     with app.app_context():
         db.drop_all()
         db.create_all()

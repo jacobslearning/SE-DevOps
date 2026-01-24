@@ -6,7 +6,7 @@ from app import app
 
 
 @pytest.fixture(autouse=True)
-def seed_auth():
+def seed_auth(client):
     with app.app_context():
         db.drop_all()
         db.create_all()
