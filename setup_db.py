@@ -3,11 +3,17 @@ from datetime import datetime
 from app import app
 from database import db
 from models import User, Department, Asset
+from tests.utils import ADMIN_DB_URL
 
 
 def init_db():
+    app.config.update(
+        TESTING=False,
+        SQLALCHEMY_DATABASE_URI=ADMIN_DB_URL,
+    )
     with app.app_context():
         # create all tables
+
         db.create_all()
 
         # departments
