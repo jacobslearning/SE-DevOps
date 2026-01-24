@@ -1,4 +1,6 @@
 from datetime import datetime, timezone
+
+from sqlalchemy import func
 from database import db
 
 
@@ -85,7 +87,7 @@ class Log(db.Model):
     action = db.Column(db.String(255), nullable=False)
     timestamp = db.Column(
         db.DateTime,
-        default=datetime.now(timezone.utc),
+        server_default=func.now(),
         nullable=False
     )
 
