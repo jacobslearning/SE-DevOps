@@ -13,8 +13,7 @@ TEST_DB_URL = os.getenv(
 def create_test_database():
     engine = create_engine(ADMIN_DB_URL, isolation_level="AUTOCOMMIT")
     with engine.connect() as conn:
-        conn.execute(text("DROP DATABASE IF EXISTS tests"))
-        conn.execute(text("CREATE DATABASE tests"))
+        conn.execute(text("CREATE DATABASE IF NOT EXISTS tests"))
 
 
 def drop_test_database():
