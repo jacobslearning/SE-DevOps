@@ -17,6 +17,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     "SQLALCHEMY_DATABASE_URI"
 )
 db.init_app(app)
+app.config.update(
+        TESTING=True,
+        SQLALCHEMY_DATABASE_URI=os.getenv("SQLALCHEMY_DATABASE_URI"),
+    )
 
 # registering all endpoints by their blueprint, held in routes/
 app.register_blueprint(assets_blueprint)
