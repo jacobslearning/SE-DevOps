@@ -48,7 +48,10 @@ def edit_user(user_id):
         flash("You cannot demote yourself to User", "info")
         return redirect(url_for('users.users'))
 
-    target_user = User.query.get_or_404(user_id)
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        flash("User not found", "danger")
+        return redirect(url_for('users.users'))
     target_user.username = username
 
     # only update password if its changed
@@ -81,7 +84,10 @@ def delete_user(user_id):
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
-    target_user = User.query.get_or_404(user_id)
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        flash("User not found", "danger")
+        return redirect(url_for('users.users'))
 
     # delete all assets owned by user
     Asset.query.filter_by(owner_id=target_user.id).delete()
@@ -118,7 +124,10 @@ def promote_user(user_id):
         flash("Unauthorised Access", "danger")
         return redirect(url_for('users.users'))
 
-    target_user = User.query.get_or_404(user_id)
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        flash("User not found", "danger")
+        return redirect(url_for('users.users'))
     target_user.role = "Admin"
     db.session.commit()
     log_action(

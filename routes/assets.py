@@ -114,7 +114,10 @@ def edit_asset(asset_id):
     data = request.form
     user = current_user()
 
-    asset = Asset.query.get_or_404(asset_id)
+    asset = db.session.get(Asset, asset_id)
+    if not asset:
+        flash("Asset not found", "danger")
+        return redirect(url_for('assets.assets'))
 
     if user.role != 'Admin' and asset.owner_id != user.id:
         log_action(
@@ -149,7 +152,10 @@ def edit_asset(asset_id):
 @login_required
 def delete_asset(asset_id):
     user = current_user()
-    asset = Asset.query.get_or_404(asset_id)
+    asset = db.session.get(Asset, asset_id)
+    if not asset:
+        flash("Asset not found", "danger")
+        return redirect(url_for('assets.assets'))
 
     if user.role != 'Admin' and asset.owner_id != user.id:
         log_action(
@@ -184,7 +190,10 @@ def approve_asset(asset_id):
         flash("Unauthorised Access", "danger")
         return redirect(url_for('assets.assets'))
 
-    asset = Asset.query.get_or_404(asset_id)
+    asset = db.session.get(Asset, asset_id)
+    if not asset:
+        flash("Asset not found", "danger")
+        return redirect(url_for('assets.assets'))
     asset.approved = True
     db.session.commit()
     log_action(

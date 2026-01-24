@@ -72,7 +72,10 @@ def edit_department(dept_id):
         return redirect(url_for('departments.departments'))
 
     new_name = request.form['name']
-    department = Department.query.get_or_404(dept_id)
+    department = db.session.get(Department, dept_id)
+    if not department:
+        flash("Department not found", "danger")
+        return redirect(url_for('departments.departments'))
     department.name = new_name
     db.session.commit()
     log_action(
@@ -99,7 +102,10 @@ def delete_department(dept_id):
         flash("Unauthorised Access", "danger")
         return redirect(url_for('departments.departments'))
 
-    department = Department.query.get_or_404(dept_id)
+    department = db.session.get(Department, dept_id)
+    if not department:
+        flash("Department not found", "danger")
+        return redirect(url_for('departments.departments'))
 
     # delete all assets assigned to department
     Asset.query.filter_by(department_id=department.id).delete()
