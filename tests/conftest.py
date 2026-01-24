@@ -26,4 +26,3 @@ def client():
         db.create_all()
         yield app.test_client()
         db.session.remove()
-        db.engine.dispose()

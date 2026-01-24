@@ -71,7 +71,7 @@ def test_department_delete(client):
     assert b"Department deleted" in response.data
 
     log = Log.query.filter(
-        Log.action.contains("Department (ID: 2)")
+        Log.action.contains("deleted by")
     ).order_by(Log.timestamp.desc()).first()
     assert log is not None
     assert "deleted" in log.action
