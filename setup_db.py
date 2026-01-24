@@ -13,7 +13,7 @@ def init_db():
     )
     with app.app_context():
         # create all tables
-
+        db.drop_all()
         db.create_all()
 
         # departments
