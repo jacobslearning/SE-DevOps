@@ -1,44 +1,8 @@
-import pytest
-from werkzeug.security import generate_password_hash
 from utils import login_as_admin, login_as_user
-from models import User, Department, Log
-from database import db
+from models import Log
 
 
-@pytest.fixture(autouse=True)
-def seed_departments(app):
-    with app.app_context():
-        db.session.query(Department).delete()
-        db.session.query(User).delete()
-        db.session.query(Log).delete()
-        db.session.commit()
-        password_hash = generate_password_hash("password")
-
-        admin = User(
-            username="admin",
-            password_hash=password_hash,
-            role="Admin"
-        )
-        user = User(
-            username="user",
-            password_hash=password_hash,
-            role="User"
-        )
-
-        hr = Department(name="HR")
-        cs = Department(name="Customer Service")
-        it = Department(name="IT")
-        store_ops = Department(name="Store Operations")
-        security = Department(name="Security")
-        marketing = Department(name="Marketing")
-
-        db.session.add_all(
-            [admin, user, hr, cs, it, store_ops, security, marketing]
-        )
-        db.session.commit()
-
-
-def test_departments_page_loads(client):
+def test_departments_page_loads(client, seed_departments):
     login_as_admin(client)
     response = client.get("/departments", follow_redirects=True)
     assert response.status_code == 200
@@ -51,7 +15,7 @@ def test_departments_page_loads(client):
     assert "Departments viewed" in log.action
 
 
-def test_department_edit(client):
+def test_department_edit(client, seed_departments):
     login_as_admin(client)
     response = client.post("/department/edit/2", data={
         "name": "new department",
@@ -66,7 +30,7 @@ def test_department_edit(client):
     assert "updated" in log.action
 
 
-def test_department_delete(client):
+def test_department_delete(client, seed_departments):
     login_as_admin(client)
     response = client.post("/department/delete/2", follow_redirects=True)
     assert response.status_code == 200
@@ -79,7 +43,7 @@ def test_department_delete(client):
     assert "deleted" in log.action
 
 
-def test_create_department(client):
+def test_create_department(client, seed_departments):
     login_as_admin(client)
     response = client.post("/department/create", data={
         "name": "new department",
@@ -94,14 +58,14 @@ def test_create_department(client):
     assert "created" in log.action
 
 
-def test_create_department_requires_login(client):
+def test_create_department_requires_login(client, seed_departments):
     response = client.post("/department/create", data={
         "name": "department name",
     }, follow_redirects=True)
     assert b"Login" in response.data or response.status_code == 403
 
 
-def test_department_user_can_not_add(client):
+def test_department_user_can_not_add(client, seed_departments):
     login_as_user(client)
     response = client.get("/departments", follow_redirects=True)
     assert response.status_code == 200

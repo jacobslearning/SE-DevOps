@@ -1,78 +1,7 @@
-import pytest
-from werkzeug.security import generate_password_hash
 from utils import login_as_admin, login_as_user
-from models import User, Department, Asset
-from datetime import datetime
-from database import db
 
 
-@pytest.fixture(autouse=True)
-def seed_dashboard(app):
-    with app.app_context():
-        db.session.query(Department).delete()
-        db.session.query(Asset).delete()
-        db.session.query(User).delete()
-        db.session.commit()
-        password_hash = generate_password_hash("password")
-
-        admin = User(
-            username="admin",
-            password_hash=password_hash,
-            role="Admin"
-        )
-        user = User(
-            username="user",
-            password_hash=password_hash,
-            role="User"
-        )
-
-        it = Department(name="IT")
-        cs = Department(name="Customer Service")
-
-        db.session.add_all([admin, user, it, cs])
-        db.session.commit()
-
-        assets = [
-            Asset(
-                name="Lenova XP5 15",
-                description="Work laptop",
-                type="Laptop",
-                serial_number="SN12345AL32323jjjj",
-                date_created=datetime.utcnow(),
-                in_use=True,
-                approved=True,
-                owner_id=user.id,
-                department_id=it.id,
-            ),
-            Asset(
-                name="Iphone 15 Pro Max",
-                description="Company phone",
-                type="Phone",
-                serial_number="SN12346AL31ddddeaaac",
-                date_created=datetime.utcnow(),
-                in_use=True,
-                approved=True,
-                owner_id=user.id,
-                department_id=it.id,
-            ),
-            Asset(
-                name="Windows 10 PC",
-                description="Office desktop",
-                type="Desktop",
-                serial_number="SN22345BO38791389173",
-                date_created=datetime.utcnow(),
-                in_use=True,
-                approved=False,
-                owner_id=user.id,
-                department_id=cs.id,
-            ),
-        ]
-
-        db.session.add_all(assets)
-        db.session.commit()
-
-
-def test_dashboard_page_loads(client):
+def test_dashboard_page_loads(client, seed_dashboard):
     login_as_admin(client)
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200
@@ -80,7 +9,7 @@ def test_dashboard_page_loads(client):
     assert b"Welcome, admin!" in response.data
 
 
-def test_metrics_load(client):
+def test_metrics_load(client, seed_dashboard):
     login_as_admin(client)
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200
@@ -94,14 +23,14 @@ def test_metrics_load(client):
     assert b"6" in response.data
 
 
-def test_role_loads_as_admin(client):
+def test_role_loads_as_admin(client, seed_dashboard):
     login_as_admin(client)
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200
     assert b"Role: Admin" in response.data
 
 
-def test_role_loads_as_user(client):
+def test_role_loads_as_user(client, seed_dashboard):
     login_as_user(client)
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200

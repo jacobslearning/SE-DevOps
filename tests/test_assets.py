@@ -1,79 +1,8 @@
-import pytest
-from datetime import datetime, timezone
-from werkzeug.security import generate_password_hash
-from database import db
-from models import User, Department, Asset, Log
+from models import Asset, Log
 from utils import login_as_admin, login_as_user
 
 
-@pytest.fixture(autouse=True)
-def seed_assets(app):
-    with app.app_context():
-        db.session.query(Asset).delete()
-        db.session.query(Log).delete()
-        db.session.query(User).delete()
-        db.session.query(Department).delete()
-        db.session.commit()
-        password_hash = generate_password_hash("password")
-
-        admin = User(
-            username="admin",
-            password_hash=password_hash,
-            role="Admin"
-        )
-        user = User(
-            username="user",
-            password_hash=password_hash,
-            role="User"
-        )
-
-        it = Department(name="IT")
-        cs = Department(name="Customer Service")
-
-        db.session.add_all([admin, user, it, cs])
-        db.session.commit()
-
-        assets = [
-            Asset(
-                name="Lenovo XP5 15",
-                description="Work laptop",
-                type="Laptop",
-                serial_number="SN12345AL32323jjjj",
-                date_created=datetime.now(timezone.utc),
-                in_use=True,
-                approved=True,
-                owner_id=user.id,
-                department_id=it.id,
-            ),
-            Asset(
-                name="Iphone 15 Pro Max",
-                description="Company phone",
-                type="Phone",
-                serial_number="SN12346AL31ddddeaaac",
-                date_created=datetime.now(timezone.utc),
-                in_use=True,
-                approved=True,
-                owner_id=user.id,
-                department_id=it.id,
-            ),
-            Asset(
-                name="Windows 10 PC",
-                description="Office desktop",
-                type="Desktop",
-                serial_number="SN22345BO38791389173",
-                date_created=datetime.now(timezone.utc),
-                in_use=True,
-                approved=False,
-                owner_id=user.id,
-                department_id=cs.id,
-            ),
-        ]
-
-        db.session.add_all(assets)
-        db.session.commit()
-
-
-def test_assets_page_loads(client):
+def test_assets_page_loads(client, seed_assets):
     login_as_admin(client)
     response = client.get("/assets", follow_redirects=True)
 
@@ -81,7 +10,7 @@ def test_assets_page_loads(client):
     assert b"Create New Asset" in response.data
 
 
-def test_asset_edit(client):
+def test_asset_edit(client, seed_assets):
     login_as_admin(client)
 
     response = client.post(
@@ -110,7 +39,7 @@ def test_asset_edit(client):
     assert "iphone 14 pro max test" in log.action
 
 
-def test_asset_delete(client):
+def test_asset_delete(client, seed_assets):
     login_as_admin(client)
 
     response = client.post("/asset/delete/2", follow_redirects=True)
@@ -126,7 +55,7 @@ def test_asset_delete(client):
     assert "2" in log.action or "Asset" in log.action
 
 
-def test_create_asset(client):
+def test_create_asset(client, seed_assets):
     login_as_admin(client)
 
     response = client.post(
@@ -156,7 +85,7 @@ def test_create_asset(client):
     assert "iphone 14 pro max test test" in log.action
 
 
-def test_create_asset_requires_login(client):
+def test_create_asset_requires_login(client, seed_assets):
     response = client.post(
         "/asset/create",
         data={
@@ -175,7 +104,7 @@ def test_create_asset_requires_login(client):
     assert b"Login" in response.data or response.status_code == 403
 
 
-def test_asset_user_cannot_approve(client):
+def test_asset_user_cannot_approve(client, seed_assets):
     login_as_user(client)
 
     response = client.post("/asset/approve/3", follow_redirects=True)
@@ -188,7 +117,7 @@ def test_asset_user_cannot_approve(client):
     assert "tried to be approved" in log.action
 
 
-def test_asset_approve(client):
+def test_asset_approve(client, seed_assets):
     login_as_admin(client)
 
     unapproved_asset = Asset.query.filter_by(approved=False).first()

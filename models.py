@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from database import db
 
 
@@ -51,7 +51,7 @@ class Asset(db.Model):
 
     date_created = db.Column(
         db.DateTime,
-        default=datetime.utcnow,
+        default=datetime.now(timezone.utc),
         nullable=False
     )
 
@@ -83,7 +83,11 @@ class Log(db.Model):
     id = db.Column(db.Integer, primary_key=True, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     action = db.Column(db.String(255), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    timestamp = db.Column(
+        db.DateTime,
+        default=datetime.now(timezone.utc),
+        nullable=False
+    )
 
     user = db.relationship("User", back_populates="logs")
 

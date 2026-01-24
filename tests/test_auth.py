@@ -1,37 +1,15 @@
-import pytest
-from werkzeug.security import generate_password_hash
 from utils import login_as_user
-from models import User, Log
-from database import db
+from models import Log
 
 
-@pytest.fixture(autouse=True)
-def seed_auth(app):
-    with app.app_context():
-        db.session.query(Log).delete()
-        db.session.query(User).delete()
-        db.session.commit()
-        password_hash = generate_password_hash("password")
-
-        admin = User(
-            username="admin", password_hash=password_hash, role="Admin"
-        )
-        user = User(
-            username="user", password_hash=password_hash, role="User"
-        )
-
-        db.session.add_all([admin, user])
-        db.session.commit()
-
-
-def test_login_page_loads(client):
+def test_login_page_loads(client, seed_auth):
     response = client.get("/dashboard", follow_redirects=True)
     assert response.status_code == 200
     assert b"Login" in response.data
     assert b"Register" in response.data
 
 
-def test_register_user(client):
+def test_register_user(client, seed_auth):
     response = client.post(
         "/register",
         data={"username": "test_user", "password": "password"},
@@ -49,13 +27,13 @@ def test_register_user(client):
     assert "Registered account" in log.action
 
 
-def test_register_user_no_details(client):
+def test_register_user_no_details(client, seed_auth):
     response = client.post("/register", follow_redirects=True)
     assert response.status_code == 200
     assert b"Username and password are required." in response.data
 
 
-def test_register_username_taken(client):
+def test_register_username_taken(client, seed_auth):
     response = client.post(
         "/register",
         data={"username": "user", "password": "password"},
@@ -65,7 +43,7 @@ def test_register_username_taken(client):
     assert b"Username is already taken." in response.data
 
 
-def test_login_incorrect_username(client):
+def test_login_incorrect_username(client, seed_auth):
     response = client.post(
         "/login",
         data={"username": "no_user", "password": "password"},
@@ -75,7 +53,7 @@ def test_login_incorrect_username(client):
     assert b"Incorrect username." in response.data
 
 
-def test_login_incorrect_password(client):
+def test_login_incorrect_password(client, seed_auth):
     response = client.post(
         "/login",
         data={"username": "user", "password": "wrongpassword"},
@@ -85,7 +63,7 @@ def test_login_incorrect_password(client):
     assert b"Incorrect password." in response.data
 
 
-def test_login(client):
+def test_login(client, seed_auth):
     response = client.post(
         "/login",
         data={"username": "user", "password": "password"},
@@ -103,7 +81,7 @@ def test_login(client):
     assert "Logged in" in log.action
 
 
-def test_logout(client):
+def test_logout(client, seed_auth):
     login_as_user(client)
     response = client.post("/logout", data={}, follow_redirects=True)
     assert response.status_code == 200
