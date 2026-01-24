@@ -11,6 +11,7 @@ def init_db():
         TESTING=False,
         SQLALCHEMY_DATABASE_URI=ADMIN_DB_URL,
     )
+    db.init_app(app)
     with app.app_context():
         # create all tables
         db.drop_all()
