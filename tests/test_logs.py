@@ -1,13 +1,13 @@
 import pytest
 from werkzeug.security import generate_password_hash
 from utils import login_as_admin, login_as_user
-from models import User, Log, db
+from models import User, Log
 from datetime import datetime
-from app import app
+from database import db
 
 
 @pytest.fixture(autouse=True)
-def seed_logs(client):
+def seed_logs(app):
     with app.app_context():
         db.drop_all()
         db.create_all()

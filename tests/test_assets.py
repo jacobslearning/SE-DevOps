@@ -1,14 +1,13 @@
 import pytest
 from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash
-from app import app
 from database import db
 from models import User, Department, Asset, Log
 from utils import login_as_admin, login_as_user
 
 
 @pytest.fixture(autouse=True)
-def seed_assets(client):
+def seed_assets(app):
     with app.app_context():
         db.drop_all()
         db.create_all()
