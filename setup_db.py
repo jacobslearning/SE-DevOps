@@ -7,7 +7,7 @@ from models import User, Department, Asset
 
 def init_db():
     app = create_app()
-    
+
     with app.app_context():
         # create all tables
         db.drop_all()
