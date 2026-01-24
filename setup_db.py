@@ -15,7 +15,6 @@ def init_db():
         # create all tables
         db.drop_all()
         db.create_all()
-        print(ADMIN_DB_URL)
 
         # departments
         dept_names = [
