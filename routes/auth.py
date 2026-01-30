@@ -47,7 +47,7 @@ def register():
             flash('Registration successful. Please log in.', 'success')
             return redirect(url_for('auth.login'))
 
-    return render_template('auth.register')
+    return render_template(url_for('auth.register'))
 
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
@@ -71,7 +71,7 @@ def login():
             flash(f'Welcome, {user.username}!', 'success')
             return redirect(url_for('dashboard.dashboard'))
 
-    return render_template('auth.login')
+    return render_template(url_for('auth.login'))
 
 
 @auth_blueprint.route('/logout', methods=['POST'])
