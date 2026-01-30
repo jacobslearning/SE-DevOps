@@ -1,3 +1,4 @@
+import re
 from flask import (
     Blueprint, render_template, request, flash, url_for, redirect, session
 )
@@ -9,6 +10,7 @@ from database import db
 from models import User
 
 auth_blueprint = Blueprint('auth', __name__)
+USERNAME_REGEX = re.compile(r'^[a-zA-Z0-9_]+$')
 
 
 @auth_blueprint.route('/register', methods=['GET', 'POST'])
@@ -23,6 +25,13 @@ def register():
         elif User.query.filter_by(username=username).first():
             flash('Username is already taken.', 'danger')
         else:
+            if not USERNAME_REGEX.match(username):
+                flash(
+                    'Username may only contain letters, numbers, and '
+                    'underscores.', 'danger'
+                )
+                return redirect(url_for('auth.register'))
+            
             password_hash = generate_password_hash(password)
             new_user = User(
                 username=username,
@@ -38,7 +47,7 @@ def register():
             flash('Registration successful. Please log in.', 'success')
             return redirect(url_for('auth.login'))
 
-    return render_template('register.html')
+    return render_template('auth.register')
 
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
@@ -62,7 +71,7 @@ def login():
             flash(f'Welcome, {user.username}!', 'success')
             return redirect(url_for('dashboard.dashboard'))
 
-    return render_template('login.html')
+    return render_template('auth.login')
 
 
 @auth_blueprint.route('/logout', methods=['POST'])

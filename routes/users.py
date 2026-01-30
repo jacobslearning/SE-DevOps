@@ -1,3 +1,4 @@
+import re
 from flask import Blueprint, render_template, request, flash, url_for, redirect
 from werkzeug.security import generate_password_hash
 from routes.utils import login_required, current_user, log_action
@@ -155,6 +156,12 @@ def create_user():
         return redirect(url_for('users.users'))
 
     username = request.form['username']
+
+    USERNAME_REGEX = re.compile(r'^[a-zA-Z0-9_]+$')
+    if not USERNAME_REGEX.match(username):
+        flash("Username may only contain letters, numbers, and underscores.",
+              "danger")
+        return redirect(url_for('users.users'))
     password = request.form['password']
     role = request.form['role']
     password_hash = generate_password_hash(password)
