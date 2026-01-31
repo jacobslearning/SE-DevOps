@@ -31,7 +31,7 @@ def register():
                     'underscores.', 'danger'
                 )
                 return redirect(url_for('auth.register'))
-            
+
             password_hash = generate_password_hash(password)
             new_user = User(
                 username=username,
